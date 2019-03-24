@@ -8,12 +8,14 @@ const info = {
 }
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if(request === true){
+        console.log('got message')
         getTitle(window.location.href)
     }
+
 })
 const getTitle = (url) =>{
     let title
-    if (URL.indexOf("9anime.is\/watch") > -1) {
+    if (url.indexOf("9anime.to\/watch") > -1) {
         title = $('h1.title')[0].innerHTML;
         let episodes = document.querySelector('a.active').innerHTML;
         if (episodes.charAt(0) == 0) episodes = episodes.substring(1, episodes.length);

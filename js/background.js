@@ -1,55 +1,52 @@
 const client = new Discord.Client()
 const clientTime = function () { return new Date() / 1000 };
-let token
-let playing = []
-chrome.storage.local.get(['token'], (items) => {token = items.token || null});
+let token, currTabId, time, timeOut
+chrome.storage.local.get(['token'], (items) => {
+    token = items.token || null
+    if(token) client.login(token);
+});
 chrome.storage.onChanged.addListener((changes, namespace) =>{
     if(namespace === "local"){
         token = changes.token.newValue
+        client.login(token);
     }
+})
+chrome.tabs.onActivated.addListener((info) => {
+    currTabId = info.tabId
 })
 chrome.runtime.onMessage.addListener(function (info, sender, sendResponse) {
     if(info === "audioCheck"){
-        audioCheck(sender.tab.id, 0).then(() => {
-            sendResponse(true)
-        }, () => {
-            delayPresence(null, 0)
-        })
+        currTabId = sender.tab.id
+        audioCheck(sender.tab.id)
+    }
+    else {
+        delayPresence(info.title, info.gameType)
     }
 });
 chrome.tabs.onUpdated.addListener((tabId, info, tab) =>{
     
 })
-const audioCheck = (id, type) => promise = new Promise((resolve, reject)=>{
-    console.log('audioCheck initializing', type)
-    if(type === 1){
-        chrome.tabs.get(id, function (tab) {
-                if(tab.audible) return resolve()
-                else return reject()
+const audioCheck = (tabId) =>{
+    chrome.tabs.get(tabId, (tab)=>{
+        console.log(tab.audible)
+        let currAudio = tab.audible
+        console.log(currAudio)
+        setInterval(function () {
+            if(currTabId !== tabId) return
+            console.log('checking')
+            chrome.tabs.get(tabId,(tab) =>{
+                if (tab.audible !== currAudio) {
+                    currAudio = tab.audible
+                    console.log(currAudio)
+                    if (tab.audible) chrome.tabs.sendMessage(tabId, true);
+                    else delayPresence(null, 0)
+                }
             })
-    }
-    else if (type === 0){
-        chrome.tabs.get(id, (tab) => {
-            console.log(tab.audible)
-            let currAudio = tab.audible
-            console.log(currAudio)
-            setInterval(function () {
-                console.log('checking')
-                chrome.tabs.get(id, (tab) =>{
-                    if (tab.audible !== currAudio) {
-                        console.log(tab.audible)
-                        if (tab.audible) return resolve()
-                        else return reject()
-                    }
-                })
     
         }, 1e3)
-        })
-
+    })
 }
 
-
-})
 function delayPresence(title, gameType) {
     if (title === client.user.presence.game || (client.user.presence.game !== null && title === client.user.presence.game.name)) {
         if (timeOut) {
@@ -71,7 +68,7 @@ function delayPresence(title, gameType) {
 }
 
 function setGame(title, gameType) {
-    if (title.length === 0) {
+    if (title === null) {
         console.log("Removing status");
         client.user.setActivity(null);
     }
@@ -89,3 +86,19 @@ function setGame(title, gameType) {
     time = new Date() / 1000;
     clearTimeout(timeOut);
 }
+
+setInterval(function () {
+    console.log("Destroying client...");
+    let tempGame;
+    if (client.user.presence.game !== "")
+        tempGame = client.user.presence.game;
+    client.destroy();
+    client = new Discord.Client();
+    client.login(token);
+    client.on('ready', () => {
+        console.log("New client made");
+        if (tempGame !== null) delayPresence(tempGame.name, tempGame.type);
+
+    });
+}, 18e5);
+
