@@ -1,0 +1,27 @@
+{
+    "manifest_version": 2,
+    "name": "Discord Media Status",
+    "version": "0.1",
+    "permissions": [
+        "tabs",
+        "storage"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*.9anime.to/watch/*"
+            ],
+            "js":["lib/jquery-3.3.1.min.js","js/script.js"],
+            "run_at": "document_start"
+        }
+    ],
+    "background":{
+        "scripts": ["lib/discord.11.3.1.js","lib/jquery-3.3.1.min.js","js/background.js"],
+        "run_at": "document_start"
+    },
+    "browser_action":{
+        "default_popup": "popup.html"
+    }
+
+    
+}
