@@ -9,7 +9,7 @@
     "content_scripts": [
         {
             "matches": [
-                "https://*.9anime.to/watch/*"
+                "https://*.9anime.to/watch/*", "https://animepahe.com/play/*"
             ],
             "js":["lib/jquery-3.3.1.min.js","js/script.js"],
             "run_at": "document_start"
