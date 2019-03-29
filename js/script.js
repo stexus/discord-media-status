@@ -1,26 +1,41 @@
 $(function () {
-    chrome.runtime.sendMessage('audioCheck') 
-    getTitle(window.location.href) 
+    getTitle(window.location.href)
+    console.log(info)
+    chrome.runtime.sendMessage(message={status:'audioCheck', title: info.title}) 
 });
 const info = {
-    title:"",
-    gameType: -1
+    title: null,
+    gameType: null
 }
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if(request === true){
-        console.log('got message')
+   /* if(request === 'update' && !firstLoad){
+        firstLoad = false
+        console.log(firstLoad)
         getTitle(window.location.href)
+        if(info.title !== null){
+            sendResponse(true)
+        }
+    }*/
+    console.log('recived message')
+    if(request.status === 'get'){
+        console.log(info)
+        if(info.title === null) getTitle(window.location.href)
+        chrome.runtime.sendMessage(info);
     }
-
 })
 const getTitle = (url) =>{
     let title
     if (url.indexOf('9anime.to\/watch') > -1) {
-        title = $('h1.title')[0].innerHTML;
-        let episodes = document.querySelector('a.active').innerHTML;
-        if (episodes.charAt(0) == 0) episodes = episodes.substring(1, episodes.length);
-        title = title + episodes
-        setInfo(title, 3);
+        const iframeWait = setInterval(() =>{
+            if($('a.active').length){
+                title = $('h1.title')[0].textContent;
+            let episodes = parseInt($('a.active')[0].textContent, 10);
+            title = `${title} Ep.${episodes}`
+            setInfo(title, 3)
+            clearInterval(iframeWait)
+            }
+        }, 100)
+        
     }
     else if(url.indexOf('animepahe.com/play/')){
         title = $('h1 a')[0].title
@@ -29,11 +44,9 @@ const getTitle = (url) =>{
         episodes = episodes.trim()
         title = `${title} Ep.${episodes}`
         setInfo(title, 3)
-
     }
 }
 const setInfo = (title, gameType) => {
     info.title = title;
     info.gameType = gameType;
-    chrome.runtime.sendMessage(info);
 }
