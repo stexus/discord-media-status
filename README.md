@@ -10,7 +10,7 @@ animephae
 
 more tbd
 
-to use, download and install in chrome manually
+to use, download and install in chrome manually (top right settings, more tools, extensions, developer mode, load unpacked)
 
 click on button for popup
 
