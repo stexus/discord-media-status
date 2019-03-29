@@ -1,6 +1,6 @@
 const client = new Discord.Client()
 const clientTime = function () { return new Date() / 1000 };
-let token, currTabId, time, Timeout
+let token, currTabId, time, timeOut
 const audioIntervals = []
 const tabs = []
 
@@ -39,22 +39,28 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) =>{
         if(changeInfo.status === 'complete'){
             chrome.tabs.sendMessage(tabId, 'update', (response)=>{
                 console.log(response)
-                if(response) audioCheck(tabId)
+                if(response.status && tabs.length > audioIntervals.lenght) {
+                    audioCheck(tabId)
+                }
             })
         }   
     }
     
 })
 chrome.tabs.onRemoved.addListener((tabId)=>{
-
-    if(audioInterval) clearInterval(audioInterval)
+    console.log(tabId)
+    if(tabs.indexOf(tabId) > -1){
+        clearInterval(audioIntervals[tabs.indexOf(tabId)])
+        delayPresence(null, 0)
+    }
 
 })
 const audioCheck = (tabId, manualAudio) =>{
     chrome.tabs.get(tabId, (tab)=>{
         let currAudio = manualAudio || tab.audible
-        if(audioInterval) clearInterval(audioInterval)
+        if(audioIntervals[tabs.indexOf(tabId)]) clearInterval(audioIntervals[tabs.indexOf(tabId)])
         audioIntervals.push(setInterval(function () {
+            console.log(audioIntervals);
             chrome.tabs.get(tabId,(tab) =>{
                 //logging all info to debug
                 console.log(`tab audio = ${tab.audible}, tabId = ${tabId}, currAudio = ${currAudio}, currTabId = ${currTabId}`)
@@ -69,7 +75,7 @@ const audioCheck = (tabId, manualAudio) =>{
                 }
             })
     
-        }, 5e3))
+        }, 10e3))
     })
 }
 
