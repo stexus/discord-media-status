@@ -1,45 +1,60 @@
 const client = new Discord.Client()
 const clientTime = function () { return new Date() / 1000 };
-let token, currTabId, time, timeOut, audioInterval
+let token, currTabId, time, Timeout
+const audioIntervals = []
+const tabs = []
 
+//setting token
 chrome.storage.local.get(['token'], (items) => {
     token = items.token || null
     if(token) client.login(token);
 });
+//finding token
 chrome.storage.onChanged.addListener((changes, namespace) =>{
     if(namespace === "local"){
         token = changes.token.newValue
         client.login(token);
     }
 })
+//changing active tab so audio; currently all but useless
 chrome.tabs.onActivated.addListener((info) => {
     currTabId = info.tabId
 })
+
 chrome.runtime.onMessage.addListener(function (info, sender, sendResponse) {
     if(info.status === "audioCheck"){
-        console.log('received')
+        tabs.push(sender.tab.id)
         if(client.user.presence.game !== null){
-            audioCheck(sender.tab.id, info.title !== client.user.presence.game.name ? false : null)
+            //setting it to latest tab (tab that was just pushed); using this format to make it clear. it is same as sender.tab.id
+            audioCheck(tabs[tabs.length-1], info.title !== client.user.presence.game.name ? false : null)
         }
-        else audioCheck(sender.tab.id)
-        currTabId = sender.tab.id
+        else audioCheck(tabs[tabs.length-1])
     }
     else {
         delayPresence(info.title, info.gameType)
     }
 });
-/*chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) =>{
-    if(changeInfo.status === 'complete'){
-        chrome.tabs.sendMessage(tabId, 'update', (response)=>{
-            if(response) audioCheck(tabId)
-        })
-    }       
-})*/
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) =>{
+    if(tabs.includes(tabId)){
+        if(changeInfo.status === 'complete'){
+            chrome.tabs.sendMessage(tabId, 'update', (response)=>{
+                console.log(response)
+                if(response) audioCheck(tabId)
+            })
+        }   
+    }
+    
+})
+chrome.tabs.onRemoved.addListener((tabId)=>{
+
+    if(audioInterval) clearInterval(audioInterval)
+
+})
 const audioCheck = (tabId, manualAudio) =>{
     chrome.tabs.get(tabId, (tab)=>{
         let currAudio = manualAudio || tab.audible
         if(audioInterval) clearInterval(audioInterval)
-        audioInterval = setInterval(function () {
+        audioIntervals.push(setInterval(function () {
             chrome.tabs.get(tabId,(tab) =>{
                 //logging all info to debug
                 console.log(`tab audio = ${tab.audible}, tabId = ${tabId}, currAudio = ${currAudio}, currTabId = ${currTabId}`)
@@ -54,7 +69,7 @@ const audioCheck = (tabId, manualAudio) =>{
                 }
             })
     
-        }, 5e3)
+        }, 5e3))
     })
 }
 
