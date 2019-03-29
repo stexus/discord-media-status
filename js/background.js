@@ -1,6 +1,7 @@
 const client = new Discord.Client()
 const clientTime = function () { return new Date() / 1000 };
-let token, currTabId, time, timeOut
+let token, currTabId, time, timeOut, audioInterval
+
 chrome.storage.local.get(['token'], (items) => {
     token = items.token || null
     if(token) client.login(token);
@@ -15,35 +16,45 @@ chrome.tabs.onActivated.addListener((info) => {
     currTabId = info.tabId
 })
 chrome.runtime.onMessage.addListener(function (info, sender, sendResponse) {
-    if(info === "audioCheck"){
+    if(info.status === "audioCheck"){
+        console.log('received')
+        if(client.user.presence.game !== null){
+            audioCheck(sender.tab.id, info.title !== client.user.presence.game.name ? false : null)
+        }
+        else audioCheck(sender.tab.id)
         currTabId = sender.tab.id
-        audioCheck(sender.tab.id)
     }
     else {
         delayPresence(info.title, info.gameType)
     }
 });
-chrome.tabs.onUpdated.addListener((tabId, info, tab) =>{
-    
-})
-const audioCheck = (tabId) =>{
+/*chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) =>{
+    if(changeInfo.status === 'complete'){
+        chrome.tabs.sendMessage(tabId, 'update', (response)=>{
+            if(response) audioCheck(tabId)
+        })
+    }       
+})*/
+const audioCheck = (tabId, manualAudio) =>{
     chrome.tabs.get(tabId, (tab)=>{
-        console.log(tab.audible)
-        let currAudio = tab.audible
-        console.log(currAudio)
-        setInterval(function () {
-            if(currTabId !== tabId) return
-            console.log('checking')
+        let currAudio = manualAudio || tab.audible
+        if(audioInterval) clearInterval(audioInterval)
+        audioInterval = setInterval(function () {
             chrome.tabs.get(tabId,(tab) =>{
+                //logging all info to debug
+                console.log(`tab audio = ${tab.audible}, tabId = ${tabId}, currAudio = ${currAudio}, currTabId = ${currTabId}`)
                 if (tab.audible !== currAudio) {
                     currAudio = tab.audible
-                    console.log(currAudio)
-                    if (tab.audible) chrome.tabs.sendMessage(tabId, true);
-                    else delayPresence(null, 0)
+                    if (tab.audible) {
+                        chrome.tabs.sendMessage(tabId, tabInfo={status: 'get'});
+                    }
+                    else {
+                        delayPresence(null, 0)
+                    }
                 }
             })
     
-        }, 1e3)
+        }, 5e3)
     })
 }
 
@@ -86,14 +97,13 @@ function setGame(title, gameType) {
     time = new Date() / 1000;
     clearTimeout(timeOut);
 }
-
+/*
 setInterval(function () {
     console.log("Destroying client...");
     let tempGame;
     if (client.user.presence.game !== "")
         tempGame = client.user.presence.game;
     client.destroy();
-    client = new Discord.Client();
     client.login(token);
     client.on('ready', () => {
         console.log("New client made");
@@ -101,4 +111,4 @@ setInterval(function () {
 
     });
 }, 18e5);
-
+*/
