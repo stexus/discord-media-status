@@ -8,14 +8,13 @@ const info = {
     gameType: null
 }
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-   /* if(request === 'update' && !firstLoad){
-        firstLoad = false
-        console.log(firstLoad)
+   if(request === 'update'){
         getTitle(window.location.href)
         if(info.title !== null){
-            sendResponse(true)
+            sendResponse({status: true})
         }
-    }*/
+        else sendResponse({status: false})
+    }
     console.log('recived message')
     if(request.status === 'get'){
         console.log(info)
