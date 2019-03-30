@@ -7,12 +7,15 @@ const tabs = []
 //setting token
 chrome.storage.local.get(['token'], (items) => {
     token = items.token || null
-    if(token) client.login(token);
+    if(token) {
+        client.login(token);
+    }
 });
 //finding token
 chrome.storage.onChanged.addListener((changes, namespace) =>{
     if(namespace === "local"){
         token = changes.token.newValue
+        client.destroy()
         client.login(token);
     }
 })
@@ -40,7 +43,11 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) =>{
             chrome.tabs.sendMessage(tabId, 'update', (response)=>{
                 console.log(response)
                 if(response.status && tabs.length > audioIntervals.lenght) {
-                    audioCheck(tabId)
+                    if(client.user.presence.game !== null){
+                        //setting it to latest tab (tab that was just pushed); using this format to make it clear. it is same as sender.tab.id
+                        audioCheck(tabs[tabs.length-1], info.title !== client.user.presence.game.name ? false : null)
+                    }
+                    else audioCheck(tabId)
                 }
             })
         }   
@@ -78,7 +85,7 @@ const audioCheck = (tabId, manualAudio) =>{
         }, 10e3))
     })
 }
-
+//no need for delayPresence; built in delay for audiocheck
 function delayPresence(title, gameType) {
     if (title === client.user.presence.game || (client.user.presence.game !== null && title === client.user.presence.game.name)) {
         if (timeOut) {
