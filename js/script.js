@@ -1,7 +1,7 @@
 $(function () {
     getTitle(window.location.href)
     console.log(info)
-    chrome.runtime.sendMessage(message={status:'audioCheck', title: info.title}) 
+    chrome.runtime.sendMessage({status:'audioCheck', title: info.title}) 
 });
 const info = {
     title: null,
@@ -11,7 +11,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
    if(request === 'update'){
         getTitle(window.location.href)
         if(info.title !== null){
-            sendResponse({status: true})
+            sendResponse({status: true, title: info.title})
         }
         else sendResponse({status: false})
     }
